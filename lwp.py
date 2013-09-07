@@ -67,25 +67,7 @@ def home():
     home page function
     '''
     if 'logged_in' in session:
-        
-        listx = lxc.listx()
-        containers_all = []
-
-        for status in ['RUNNING', 'FROZEN', 'STOPPED']:
-            containers_by_status = []
-
-            for container in listx[status]:
-                containers_by_status.append({
-                    'name': container,
-                    'memusg': lwp.memory_usage(container),
-                    'settings': lwp.get_container_settings(container)
-                })
-            containers_all.append({
-                        'status' : status.lower(),
-                        'containers' : containers_by_status
-                })
-
-        return render_template('index.html', containers=lxc.ls(), containers_all=containers_all, dist=lwp.check_ubuntu(), templates=lwp.get_templates_list())
+        return render_template('index.html', containers=lxc.ls(), dist=lwp.check_ubuntu(), templates=lwp.get_templates_list())
     return render_template('login.html')
 
 
@@ -432,6 +414,14 @@ def action():
                         flash(u'Unable to stop %s!' % name, 'error')
                 except lxc.ContainerNotRunning:
                     flash(u'Container %s is already stopped!' % name, 'error')
+            elif action == 'shutdown':
+                try:
+                    if lxc.shutdown(name) == 0:
+                        flash(u'Container %s shutdown initiated.' % name, 'success')
+                    else:
+                        flash(u'Unable to shutdown %s!' % name, 'error')
+                except lxc.ContainerNotRunning:
+                    flash(u'Container %s is already stopped!' % name, 'error')
             elif action == 'freeze':
                 try:
                     if lxc.freeze(name) == 0:
@@ -640,6 +630,29 @@ def logout():
     return redirect(url_for('login'))
 
 
+@app.route('/_refresh_containers')
+def refresh_containers():
+    if 'logged_in' in session:
+        listx = lxc.listx()
+        containers_all = []
+
+        for status in ['RUNNING', 'FROZEN', 'STOPPED']:
+            containers_by_status = []
+
+            for container in listx[status]:
+                containers_by_status.append({
+                    'name': container,
+                    'memusg': lwp.memory_usage(container),
+                    'settings': lwp.get_container_settings(container)
+                })
+            containers_all.append({
+                        'status' : status.lower(),
+                        'containers' : containers_by_status
+                })
+
+        return render_template('containers.html', containers_all=containers_all)
+
+    
 @app.route('/_refresh_cpu_host')
 def refresh_cpu_host():
     if 'logged_in' in session:
