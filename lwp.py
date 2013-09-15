@@ -9,6 +9,7 @@ import signal
 import sqlite3
 import os
 import ConfigParser
+from netaddr import IPNetwork, IPAddress
 
 # configuration
 config = ConfigParser.SafeConfigParser()
@@ -93,7 +94,7 @@ def edit(container=None):
             cfg = lwp.get_container_settings(container)
             ip_regex = '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(/(3[0-2]|[12]?[0-9]))?'
             info = lxc.info(container)
-
+            
             form = {}
             form['type'] = request.form['type']
             form['link'] = request.form['link']
@@ -105,6 +106,10 @@ def edit(container=None):
             form['rootfs'] = request.form['rootfs']
             form['utsname'] = request.form['hostname']
             form['ipv4'] = request.form['ipaddress']
+            try:
+                form['gateway'] = request.form['gatewayaddress']
+            except KeyError:
+                form['gateway'] = ''
             form['memlimit'] = request.form['memlimit']
             form['swlimit'] = request.form['swlimit']
             form['cpus'] = request.form['cpus']
@@ -137,6 +142,14 @@ def edit(container=None):
             if ( not form['ipv4'] and form['ipv4'] != cfg['ipv4'] ) or ( form['ipv4'] != cfg['ipv4'] and re.match('^%s$' % ip_regex, form['ipv4']) ):
                 lwp.push_config_value('lxc.network.ipv4', form['ipv4'], container=container)
                 flash(u'IP address updated for %s!' % container, 'success')
+            
+            if ( not form['gateway'] and form['gateway'] != cfg['gateway'] ) or ( form['gateway'] != cfg['gateway'] and re.match('^%s$' % ip_regex, form['gateway']) ):
+                if IPAddress(form['gateway']) in IPNetwork(form['ipv4']):
+                    lwp.push_config_value('lxc.network.ipv4.gateway', form['gateway'], container=container)
+                    flash(u'Gateway address updated for %s!' % container, 'success')
+                else:
+                    flash(u'Gateway address not in same network of ip address','error')
+
 
             if form['memlimit'] != cfg['memlimit'] and form['memlimit'].isdigit() and int(form['memlimit']) <= int(host_memory['total']):
                 if int(form['memlimit']) == int(host_memory['total']):
@@ -596,7 +609,6 @@ def login():
     if request.method == 'POST':
         request_username = request.form['username']
         request_passwd = hash_passwd(request.form['password'])
-
         current_url = request.form['url']
 
         user = query_db('select name, username, su from users where username=? and password=?', [request_username, request_passwd], one=True)
