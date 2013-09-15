@@ -20,6 +20,7 @@ cgroup['rootfs'] = 'lxc.rootfs'
 cgroup['utsname'] = 'lxc.utsname'
 cgroup['arch'] = 'lxc.arch'
 cgroup['ipv4'] = 'lxc.network.ipv4'
+cgroup['gateway'] = 'lxc.network.ipv4.gateway'
 cgroup['memlimit'] = 'lxc.cgroup.memory.limit_in_bytes'
 cgroup['swlimit'] = 'lxc.cgroup.memory.memsw.limit_in_bytes'
 cgroup['cpus'] = 'lxc.cgroup.cpuset.cpus'
@@ -287,6 +288,11 @@ def get_container_settings(name):
         cfg['ipv4'] = config.get('DEFAULT', cgroup['ipv4'])
     except ConfigParser.NoOptionError:
         cfg['ipv4'] = ''
+    try:
+        cfg['gateway'] = config.get('DEFAULT', cgroup['gateway'])
+    except ConfigParser.NoOptionError:
+        cfg['gateway'] = ''
+
     try:
         cfg['memlimit'] = re.sub(r'[a-zA-Z]', '', config.get('DEFAULT', cgroup['memlimit']))
     except ConfigParser.NoOptionError:
