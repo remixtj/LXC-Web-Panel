@@ -153,8 +153,8 @@ def edit(container=None):
                 lwp.push_config_value('lxc.network.ipv4', form['ipv4'], container=container)
                 flash(u'IP address updated for %s!' % container, 'success')
             
-            if ( not form['gateway'] and form['gateway'] != cfg['gateway'] ) or ( form['gateway'] != cfg['gateway'] and re.match('^%s$' % ip_regex, form['gateway']) ):
-                if IPAddress(form['gateway']) in IPNetwork(form['ipv4']):
+            if ( not form['gateway'] and form['gateway'] != cfg['gateway'] ) or ( form['gateway'] != cfg['gateway'] and re.match('^%s$' % ip_regex, form['gateway']) ) or ( form['gateway'] != cfg['gateway'] and form['gateway'] == 'auto' ):
+                if (IPAddress(form['gateway']) in IPNetwork(form['ipv4'])) or (form['gateway'] == 'auto'):
                     lwp.push_config_value('lxc.network.ipv4.gateway', form['gateway'], container=container)
                     flash(u'Gateway address updated for %s!' % container, 'success')
                 else:
